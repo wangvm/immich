@@ -25,6 +25,7 @@ import { OAuthRepository } from 'src/repositories/oauth.repository';
 import { PartnerRepository } from 'src/repositories/partner.repository';
 import { PersonRepository } from 'src/repositories/person.repository';
 import { ProcessRepository } from 'src/repositories/process.repository';
+import { SchemaRepository } from 'src/repositories/schema.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { ServerInfoRepository } from 'src/repositories/server-info.repository';
 import { SessionRepository } from 'src/repositories/session.repository';
@@ -68,6 +69,7 @@ export const repositories = [
   PartnerRepository,
   PersonRepository,
   ProcessRepository,
+  SchemaRepository,
   SearchRepository,
   SessionRepository,
   ServerInfoRepository,

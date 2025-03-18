@@ -571,3 +571,23 @@ export enum SyncEntityType {
   PartnerAssetDeleteV1 = 'PartnerAssetDeleteV1',
   PartnerAssetExifV1 = 'PartnerAssetExifV1',
 }
+
+export enum DatabaseConstraintType {
+  PRIMARY_KEY = 'primary-key',
+  FOREIGN_KEY = 'foreign-key',
+  UNIQUE = 'unique',
+  CHECK = 'check',
+}
+
+export enum DatabaseRelationType {
+  MANY_TO_ONE = 'many-to-one',
+  ONE_TO_ONE = 'one-to-one',
+}
+
+export enum DatabaseActionType {
+  NO_ACTION = 'NO ACTION',
+  RESTRICT = 'RESTRICT',
+  CASCADE = 'CASCADE',
+  SET_NULL = 'SET NULL',
+  SET_DEFAULT = 'SET DEFAULT',
+}

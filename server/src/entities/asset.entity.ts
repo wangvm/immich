@@ -1,57 +1,56 @@
 import { DeduplicateJoinsPlugin, ExpressionBuilder, Kysely, SelectQueryBuilder, sql } from 'kysely';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import { DB } from 'src/db';
-import { AlbumEntity } from 'src/entities/album.entity';
-import { AssetFaceEntity } from 'src/entities/asset-face.entity';
-import { AssetFileEntity } from 'src/entities/asset-files.entity';
-import { AssetJobStatusEntity } from 'src/entities/asset-job-status.entity';
-import { ExifEntity } from 'src/entities/exif.entity';
 import { LibraryEntity } from 'src/entities/library.entity';
-import { SharedLinkEntity } from 'src/entities/shared-link.entity';
-import { SmartSearchEntity } from 'src/entities/smart-search.entity';
-import { StackEntity } from 'src/entities/stack.entity';
-import { TagEntity } from 'src/entities/tag.entity';
 import { UserEntity } from 'src/entities/user.entity';
 import { AssetFileType, AssetStatus, AssetType } from 'src/enum';
 import { TimeBucketSize } from 'src/repositories/asset.repository';
 import { AssetSearchBuilderOptions } from 'src/repositories/search.repository';
-import { anyUuid, asUuid } from 'src/utils/database';
 import {
   Column,
+  ColumnIndex,
   CreateDateColumn,
   DeleteDateColumn,
-  Entity,
+  GeneratedColumn,
   Index,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
-  OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
+  Table,
   UpdateDateColumn,
-} from 'typeorm';
+} from 'src/schema.decorator';
+import { anyUuid, asUuid } from 'src/utils/database';
 
 export const ASSET_CHECKSUM_CONSTRAINT = 'UQ_assets_owner_checksum';
 
-@Entity('assets')
+@Table('assets')
 // Checksums must be unique per user and library
-@Index(ASSET_CHECKSUM_CONSTRAINT, ['owner', 'checksum'], {
+@Index({
+  name: ASSET_CHECKSUM_CONSTRAINT,
+  columns: ['ownerId', 'checksum'],
   unique: true,
-  where: '"libraryId" IS NULL',
+  where: '("libraryId" IS NULL)',
 })
-@Index('UQ_assets_owner_library_checksum' + '', ['owner', 'library', 'checksum'], {
+@Index({
+  name: 'UQ_assets_owner_library_checksum' + '',
+  columns: ['ownerId', 'libraryId', 'checksum'],
   unique: true,
-  where: '"libraryId" IS NOT NULL',
+  where: '("libraryId" IS NOT NULL)',
 })
-@Index('idx_local_date_time', { synchronize: false })
-@Index('idx_local_date_time_month', { synchronize: false })
-@Index('IDX_originalPath_libraryId', ['originalPath', 'libraryId'])
-@Index('IDX_asset_id_stackId', ['id', 'stackId'])
-@Index('idx_originalFileName_trigram', { synchronize: false })
+@Index({ name: 'idx_local_date_time', expression: `(("localDateTime" AT TIME ZONE 'UTC'::text))::date` })
+@Index({
+  name: 'idx_local_date_time_month',
+  expression: `(date_trunc('MONTH'::text, ("localDateTime" AT TIME ZONE 'UTC'::text)) AT TIME ZONE 'UTC'::text)`,
+})
+@Index({ name: 'IDX_originalPath_libraryId', columns: ['originalPath', 'libraryId'] })
+@Index({ name: 'IDX_asset_id_stackId', columns: ['id', 'stackId'] })
+@Index({
+  name: 'idx_originalFileName_trigram',
+  using: 'gin',
+  expression: 'f_unaccent(("originalFileName")::text)',
+})
 // For all assets, each originalpath must be unique per user and library
 export class AssetEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id!: string;
 
   @Column()
@@ -60,13 +59,13 @@ export class AssetEntity {
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: false })
   owner!: UserEntity;
 
-  @Column()
+  @Column({ type: 'uuid' })
   ownerId!: string;
 
   @ManyToOne(() => LibraryEntity, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   library?: LibraryEntity | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   libraryId?: string | null;
 
   @Column()
@@ -81,36 +80,36 @@ export class AssetEntity {
   @Column()
   originalPath!: string;
 
-  @OneToMany(() => AssetFileEntity, (assetFile) => assetFile.asset)
-  files!: AssetFileEntity[];
+  // @OneToMany(() => AssetFileEntity, (assetFile) => assetFile.asset)
+  // files!: AssetFileEntity[];
 
   @Column({ type: 'bytea', nullable: true })
   thumbhash!: Buffer | null;
 
-  @Column({ type: 'varchar', nullable: true, default: '' })
+  @Column({ type: 'character varying', nullable: true, default: '' })
   encodedVideoPath!: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Index('IDX_assets_update_id')
-  @Column({ type: 'uuid', nullable: false, default: () => 'immich_uuid_v7()' })
+  @ColumnIndex('IDX_assets_update_id')
+  @GeneratedColumn({ version: 'v7' })
   updateId?: string;
 
-  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  @DeleteDateColumn()
   deletedAt!: Date | null;
 
-  @Index('idx_asset_file_created_at')
-  @Column({ type: 'timestamptz', nullable: true, default: null })
+  @ColumnIndex('idx_asset_file_created_at')
+  @Column({ type: 'timestamp with time zone', default: null })
   fileCreatedAt!: Date;
 
-  @Column({ type: 'timestamptz', nullable: true, default: null })
+  @Column({ type: 'timestamp with time zone', default: null })
   localDateTime!: Date;
 
-  @Column({ type: 'timestamptz', nullable: true, default: null })
+  @Column({ type: 'timestamp with time zone', default: null })
   fileModifiedAt!: Date;
 
   @Column({ type: 'boolean', default: false })
@@ -126,60 +125,60 @@ export class AssetEntity {
   isOffline!: boolean;
 
   @Column({ type: 'bytea' })
-  @Index()
+  @ColumnIndex()
   checksum!: Buffer; // sha1 checksum
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'character varying', nullable: true })
   duration!: string | null;
 
   @Column({ type: 'boolean', default: true })
   isVisible!: boolean;
 
-  @ManyToOne(() => AssetEntity, { nullable: true, onUpdate: 'CASCADE', onDelete: 'SET NULL' })
-  @JoinColumn()
-  livePhotoVideo!: AssetEntity | null;
+  // @ManyToOne(() => AssetEntity, { nullable: true, onUpdate: 'CASCADE', onDelete: 'SET NULL' })
+  // @JoinColumn()
+  // livePhotoVideo!: AssetEntity | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   livePhotoVideoId!: string | null;
 
-  @Column({ type: 'varchar' })
-  @Index()
+  @Column()
+  @ColumnIndex()
   originalFileName!: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ nullable: true })
   sidecarPath!: string | null;
 
-  @OneToOne(() => ExifEntity, (exifEntity) => exifEntity.asset)
-  exifInfo?: ExifEntity;
+  // @OneToOne(() => ExifEntity, (exifEntity) => exifEntity.asset)
+  // exifInfo?: ExifEntity;
 
-  @OneToOne(() => SmartSearchEntity, (smartSearchEntity) => smartSearchEntity.asset)
-  smartSearch?: SmartSearchEntity;
+  // @OneToOne(() => SmartSearchEntity, (smartSearchEntity) => smartSearchEntity.asset)
+  // smartSearch?: SmartSearchEntity;
 
-  @ManyToMany(() => TagEntity, (tag) => tag.assets, { cascade: true })
-  @JoinTable({ name: 'tag_asset', synchronize: false })
-  tags!: TagEntity[];
+  // @ManyToMany(() => TagEntity, (tag) => tag.assets, { cascade: true })
+  // @JoinTable({ name: 'tag_asset', synchronize: false })
+  // tags!: TagEntity[];
 
-  @ManyToMany(() => SharedLinkEntity, (link) => link.assets, { cascade: true })
-  @JoinTable({ name: 'shared_link__asset' })
-  sharedLinks!: SharedLinkEntity[];
+  // @ManyToMany(() => SharedLinkEntity, (link) => link.assets, { cascade: true })
+  // @JoinTable({ name: 'shared_link__asset' })
+  // sharedLinks!: SharedLinkEntity[];
 
-  @ManyToMany(() => AlbumEntity, (album) => album.assets, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  albums?: AlbumEntity[];
+  // @ManyToMany(() => AlbumEntity, (album) => album.assets, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  // albums?: AlbumEntity[];
 
-  @OneToMany(() => AssetFaceEntity, (assetFace) => assetFace.asset)
-  faces!: AssetFaceEntity[];
+  // @OneToMany(() => AssetFaceEntity, (assetFace) => assetFace.asset)
+  // faces!: AssetFaceEntity[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   stackId?: string | null;
 
-  @ManyToOne(() => StackEntity, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
-  @JoinColumn()
-  stack?: StackEntity | null;
+  // @ManyToOne(() => StackEntity, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
+  // @JoinColumn()
+  // stack?: StackEntity | null;
 
-  @OneToOne(() => AssetJobStatusEntity, (jobStatus) => jobStatus.asset, { nullable: true })
-  jobStatus?: AssetJobStatusEntity;
+  // @OneToOne(() => AssetJobStatusEntity, (jobStatus) => jobStatus.asset, { nullable: true })
+  // jobStatus?: AssetJobStatusEntity;
 
-  @Index('IDX_assets_duplicateId')
+  @ColumnIndex('IDX_assets_duplicateId')
   @Column({ type: 'uuid', nullable: true })
   duplicateId!: string | null;
 }

@@ -7,34 +7,33 @@ import { UserMetadataEntity } from 'src/entities/user-metadata.entity';
 import { UserStatus } from 'src/enum';
 import {
   Column,
+  ColumnIndex,
   CreateDateColumn,
   DeleteDateColumn,
-  Entity,
   Index,
-  OneToMany,
-  PrimaryGeneratedColumn,
+  Table,
   UpdateDateColumn,
-} from 'typeorm';
+} from 'src/schema.decorator';
 
-@Entity('users')
-@Index('IDX_users_updated_at_asc_id_asc', ['updatedAt', 'id'])
+@Table('users')
+@Index({ name: 'IDX_users_updated_at_asc_id_asc', columns: ['updatedAt', 'id'] })
 export class UserEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @Column({ primary: true, type: 'uuid', default: 'uuid_generate_v4()' })
   id!: string;
 
-  @Column({ default: '' })
+  @Column()
   name!: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isAdmin!: boolean;
 
   @Column({ unique: true })
   email!: string;
 
-  @Column({ type: 'varchar', unique: true, default: null })
+  @Column({ unique: true, nullable: true, default: null })
   storageLabel!: string | null;
 
-  @Column({ default: '', select: false })
+  @Column({ default: '' })
   password?: string;
 
   @Column({ default: '' })
@@ -43,30 +42,24 @@ export class UserEntity {
   @Column({ default: '' })
   profileImagePath!: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   shouldChangePassword!: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt!: Date | null;
-
-  @Column({ type: 'varchar', default: UserStatus.ACTIVE })
-  status!: UserStatus;
-
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Index('IDX_users_update_id')
-  @Column({ type: 'uuid', nullable: false, default: () => 'immich_uuid_v7()' })
+  @DeleteDateColumn()
+  deletedAt!: Date | null;
+
+  @Column({ type: 'character varying', default: UserStatus.ACTIVE })
+  status!: UserStatus;
+
+  @ColumnIndex({ name: 'IDX_users_update_id' })
+  @Column({ type: 'uuid', default: `immich_uuid_v7()` })
   updateId?: string;
-
-  @OneToMany(() => TagEntity, (tag) => tag.user)
-  tags!: TagEntity[];
-
-  @OneToMany(() => AssetEntity, (asset) => asset.owner)
-  assets!: AssetEntity[];
 
   @Column({ type: 'bigint', nullable: true })
   quotaSizeInBytes!: number | null;
@@ -74,11 +67,12 @@ export class UserEntity {
   @Column({ type: 'bigint', default: 0 })
   quotaUsageInBytes!: number;
 
-  @OneToMany(() => UserMetadataEntity, (metadata) => metadata.user)
-  metadata!: UserMetadataEntity[];
-
-  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp with time zone', default: 'CURRENT_TIMESTAMP' })
   profileChangedAt!: Date;
+
+  tags!: TagEntity[];
+  assets!: AssetEntity[];
+  metadata!: UserMetadataEntity[];
 }
 
 export const withMetadata = (eb: ExpressionBuilder<DB, 'users'>) => {

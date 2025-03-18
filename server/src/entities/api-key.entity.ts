@@ -1,34 +1,43 @@
 import { UserEntity } from 'src/entities/user.entity';
 import { Permission } from 'src/enum';
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  ColumnIndex,
+  CreateDateColumn,
+  GeneratedColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Table,
+  UpdateDateColumn,
+} from 'src/schema.decorator';
 
-@Entity('api_keys')
+@Table('api_keys')
 export class APIKeyEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id!: string;
 
   @Column()
   name!: string;
 
-  @Column({ select: false })
-  key?: string;
-
-  @ManyToOne(() => UserEntity, { onUpdate: 'CASCADE', onDelete: 'CASCADE' })
-  user?: UserEntity;
-
   @Column()
+  key!: string;
+
+  @Column({ type: 'uuid', nullable: false })
   userId!: string;
 
-  @Column({ array: true, type: 'varchar' })
+  @Column({ array: true, type: 'character varying' })
   permissions!: Permission[];
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Index('IDX_api_keys_update_id')
-  @Column({ type: 'uuid', nullable: false, default: () => 'immich_uuid_v7()' })
+  @ColumnIndex({ name: 'IDX_api_keys_update_id' })
+  @GeneratedColumn({ version: 'v4' })
   updateId?: string;
+
+  @ManyToOne(() => UserEntity, { onUpdate: 'CASCADE', onDelete: 'CASCADE' })
+  user!: UserEntity;
 }

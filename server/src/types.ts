@@ -1,5 +1,7 @@
 import {
   AssetType,
+  DatabaseActionType,
+  DatabaseConstraintType,
   DatabaseExtension,
   ExifOrientation,
   ImageFormat,
@@ -453,4 +455,125 @@ export type StorageAsset = {
   originalFileName: string;
   sidecarPath: string | null;
   fileSizeInByte: number | null;
+};
+
+export type DatabaseColumnType =
+  | 'bigint'
+  | 'boolean'
+  | 'bytea'
+  | 'character'
+  | 'character varying'
+  | 'date'
+  | 'double precision'
+  | 'integer'
+  | 'jsonb'
+  | 'polygon'
+  | 'text'
+  | 'timestamp with time zone'
+  | 'uuid'
+  | 'vector'
+  | 'enum';
+
+export type TableOptions = {
+  name?: string;
+};
+
+export type ColumnOptions = {
+  primary?: boolean;
+  name?: string;
+  type?: DatabaseColumnType;
+  nullable?: boolean;
+  enum?: object;
+  default?: any;
+  array?: boolean;
+  unique?: boolean;
+};
+
+export type GenerateColumnOptions = ColumnOptions & { version?: 'v4' | 'v7' };
+
+export type ColumnIndexOptions = {
+  name?: string;
+  unique?: boolean;
+  expression?: string;
+  using?: string;
+  where?: string;
+};
+
+export type IndexOptions = ColumnIndexOptions & {
+  columns?: string[];
+};
+
+export type DatabaseSchema = {
+  name: string;
+  tables: DatabaseTable[];
+};
+
+export type DatabaseTable = {
+  name: string;
+  columns: DatabaseColumn[];
+  indexes: DatabaseIndex[];
+  constraints: DatabaseConstraint[];
+};
+
+export type DatabaseConstraint =
+  | DatabasePrimaryKeyConstraint
+  | DatabaseForeignKeyConstraint
+  | DatabaseUniqueConstraint
+  | DatabaseCheckConstraint;
+
+export type DatabaseColumn = {
+  primary?: boolean;
+  name: string;
+  tableName: string;
+
+  type: DatabaseColumnType;
+  nullable: boolean;
+  isArray: boolean;
+  default?: string;
+
+  // enum values
+  values?: string[];
+
+  // numeric types
+  numericPrecision?: number;
+  numericScale?: number;
+};
+
+type ColumBasedConstraint = {
+  name: string;
+  tableName: string;
+  columnNames: string[];
+};
+
+export type DatabasePrimaryKeyConstraint = ColumBasedConstraint & {
+  type: DatabaseConstraintType.PRIMARY_KEY;
+};
+
+export type DatabaseUniqueConstraint = ColumBasedConstraint & {
+  type: DatabaseConstraintType.UNIQUE;
+};
+
+export type DatabaseForeignKeyConstraint = ColumBasedConstraint & {
+  type: DatabaseConstraintType.FOREIGN_KEY;
+  referenceTableName: string;
+  referenceColumnNames: string[];
+  onUpdate?: DatabaseActionType;
+  onDelete?: DatabaseActionType;
+};
+
+export type DatabaseCheckConstraint = {
+  type: DatabaseConstraintType.CHECK;
+  name: string;
+  tableName: string;
+  expression: string;
+};
+
+export type DatabaseIndex = {
+  name: string;
+  tableName: string;
+  columnNames?: string[];
+  expression?: string;
+  using?: string;
+  unique?: boolean;
+  where?: string;
 };

@@ -2,40 +2,45 @@ import { AlbumEntity } from 'src/entities/album.entity';
 import { AssetEntity } from 'src/entities/asset.entity';
 import { UserEntity } from 'src/entities/user.entity';
 import {
-  Check,
   Column,
+  ColumnIndex,
   CreateDateColumn,
-  Entity,
   Index,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Table,
   UpdateDateColumn,
-} from 'typeorm';
+} from 'src/schema.decorator';
 
-@Entity('activity')
-@Index('IDX_activity_like', ['assetId', 'userId', 'albumId'], { unique: true, where: '("isLiked" = true)' })
-@Check(`("comment" IS NULL AND "isLiked" = true) OR ("comment" IS NOT NULL AND "isLiked" = false)`)
+@Table('activity')
+@Index({
+  name: 'IDX_activity_like',
+  columns: ['assetId', 'userId', 'albumId'],
+  unique: true,
+  where: '("isLiked" = true)',
+})
+// @Check(`("comment" IS NULL AND "isLiked" = true) OR ("comment" IS NOT NULL AND "isLiked" = false)`)
 export class ActivityEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id!: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Index('IDX_activity_update_id')
+  @ColumnIndex('IDX_activity_update_id')
   @Column({ type: 'uuid', nullable: false, default: () => 'immich_uuid_v7()' })
-  updateId?: string;
+  updateId!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   albumId!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId!: string;
 
-  @Column({ nullable: true, type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   assetId!: string | null;
 
   @Column({ type: 'text', default: null })

@@ -1,31 +1,23 @@
-import { AlbumUserEntity } from 'src/entities/album-user.entity';
-import { AssetEntity } from 'src/entities/asset.entity';
-import { SharedLinkEntity } from 'src/entities/shared-link.entity';
-import { UserEntity } from 'src/entities/user.entity';
 import { AssetOrder } from 'src/enum';
 import {
   Column,
+  ColumnIndex,
   CreateDateColumn,
   DeleteDateColumn,
-  Entity,
-  Index,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
+  Table,
   UpdateDateColumn,
-} from 'typeorm';
+} from 'src/schema.decorator';
 
-@Entity('albums')
+@Table('albums')
 export class AlbumEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id!: string;
 
-  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: false })
-  owner!: UserEntity;
+  // @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: false })
+  // owner!: UserEntity;
 
-  @Column()
+  @Column({ type: 'uuid' })
   ownerId!: string;
 
   @Column({ default: 'Untitled Album' })
@@ -34,38 +26,41 @@ export class AlbumEntity {
   @Column({ type: 'text', default: '' })
   description!: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Index('IDX_albums_update_id')
+  @ColumnIndex('IDX_albums_update_id')
   @Column({ type: 'uuid', nullable: false, default: () => 'immich_uuid_v7()' })
   updateId?: string;
 
-  @DeleteDateColumn({ type: 'timestamptz' })
+  @DeleteDateColumn()
   deletedAt!: Date | null;
 
-  @ManyToOne(() => AssetEntity, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
-  albumThumbnailAsset!: AssetEntity | null;
+  // @ManyToOne(() => AssetEntity, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
+  // albumThumbnailAsset!: AssetEntity | null;
 
-  @Column({ comment: 'Asset ID to be used as thumbnail', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   albumThumbnailAssetId!: string | null;
 
-  @OneToMany(() => AlbumUserEntity, ({ album }) => album, { cascade: true, onDelete: 'CASCADE' })
-  albumUsers!: AlbumUserEntity[];
+  // @OneToMany(() => AlbumUserEntity, ({ album }) => album, { cascade: true, onDelete: 'CASCADE' })
+  // albumUsers!: AlbumUserEntity[];
 
-  @ManyToMany(() => AssetEntity, (asset) => asset.albums)
-  @JoinTable({ synchronize: false })
-  assets!: AssetEntity[];
+  // @OneToMany(() => AlbumUserEntity, ({ album }) => album, { cascade: true, onDelete: 'CASCADE' })
+  // albumUsers!: AlbumUserEntity[];
 
-  @OneToMany(() => SharedLinkEntity, (link) => link.album)
-  sharedLinks!: SharedLinkEntity[];
+  // @ManyToMany(() => AssetEntity, (asset) => asset.albums)
+  // @JoinTable({ synchronize: false })
+  // assets!: AssetEntity[];
 
-  @Column({ default: true })
+  // @OneToMany(() => SharedLinkEntity, (link) => link.album)
+  // sharedLinks!: SharedLinkEntity[];
+
+  @Column({ type: 'boolean', default: true })
   isActivityEnabled!: boolean;
 
-  @Column({ type: 'varchar', default: AssetOrder.DESC })
+  @Column({ default: AssetOrder.DESC })
   order!: AssetOrder;
 }
